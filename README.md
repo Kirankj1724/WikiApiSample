@@ -1,6 +1,6 @@
 # wiki_api_sample
 
-A new Flutter project.
+A Flutter app to show search results via Wiki API.
 
 ## Getting Started
 
