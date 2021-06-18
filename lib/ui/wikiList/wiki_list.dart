@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -10,25 +11,30 @@ import 'package:wiki_api_sample/ui/wikiList/wiki_list_presenter.dart';
 import 'package:wiki_api_sample/ui/wikiList/wiki_list_view.dart';
 import 'package:wiki_api_sample/util/screen_util.dart';
 
-TextEditingController _wikiSearchKeyController = new TextEditingController();
-List<ResultModel> _wikiSearchList = [];
-bool noData = false, isClearVisible = false;
-String searchMessage = "Let's go!";
-WikiListPresenter? _presenter;
-
 class WikiListPage extends StatefulWidget {
   @override
   _WikiListPageState createState() => _WikiListPageState();
 }
 
 class _WikiListPageState extends State<WikiListPage> implements WikiListView {
+
+
+  TextEditingController _wikiSearchKeyController = new TextEditingController();
+  List<ResultModel> _wikiSearchList = [];
+  bool noData = true, hasLocalData=false;
+  String searchMessage = "Let's go!";
+  WikiListPresenter? _presenter;
+  List<String> _historyList = [];
+
   @override
   Widget build(BuildContext context) {
     ScreenUtil(context);
 
     _presenter=WikiListPresenter(this);
+    _presenter?.getSearchHistoryFromLocal();
 
     return Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(title: Text("Wiki Search")),
         body: Container(
             padding: EdgeInsets.all(10),
@@ -46,32 +52,45 @@ class _WikiListPageState extends State<WikiListPage> implements WikiListView {
                       onSubmitted: (value) {
                         if (value.isNotEmpty) {
                           _presenter?.getSearchList(value);
-                          // _wikiSearchKeyController.clear();
                         }
-                      },
-                      onChanged: (value) {
-                        // setState(() {
-                        //   if (value.length > 0)
-                        //     isClearVisible = true;
-                        //   else
-                        //     isClearVisible = false;
-                        // });
                       },
                       style: TextStyle(
                           color: Colors.black,
                           fontSize: ScreenUtil.fontSizeSmall),
-                      decoration: InputDecoration(
+                          decoration: InputDecoration(
                           border: InputBorder.none,
                           hintText: "Type here to search ...",
                           hintStyle: TextStyle(
                               color: Colors.grey,
-                              fontSize: ScreenUtil.fontSizeSmall),
-                          suffixIcon: isClearVisible
-                              ? IconButton(
-                                  onPressed: _clearSearch(),
-                                  icon: Icon(Icons.clear),
-                                )
-                              : null))),
+                              fontSize: ScreenUtil.fontSizeSmall)))),
+              if(hasLocalData) Container(
+                height: 50,
+                color: Colors.white,
+                child: ListView.builder(
+                  itemCount: _historyList.length,
+                  scrollDirection: Axis.horizontal,
+                  itemBuilder: (context, index) {
+                    return Container(
+                      alignment: Alignment.center,
+                      //color: Colors.blue[(index % 9) * 100],
+                      child: Row(mainAxisSize: MainAxisSize.min,children: [Padding(
+                        padding: const EdgeInsets.all(5.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            _wikiSearchKeyController.text=_historyList[index];
+                            _presenter!.getSearchList(_historyList[index]);
+                            },
+                          child: Container(decoration: BoxDecoration(border: Border.all(color: Colors.grey))
+                              ,child: Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: Text(_historyList[index], style: TextStyle(color: Colors.grey,fontSize: ScreenUtil.fontSizeExtraSmall)),
+                              )),
+                        ),
+                      )]),
+                    );
+                  },
+                ),
+              ),
               if (!noData)
                 Expanded(
                     child: StaggeredGridView.countBuilder(
@@ -82,10 +101,12 @@ class _WikiListPageState extends State<WikiListPage> implements WikiListView {
                               child: Column(children: <Widget>[
                                 Padding(
                                     padding: const EdgeInsets.all(8.0),
-                                    child: FadeInImage.assetNetwork(
-                                        placeholder: '',
-                                        image:
-                                            _wikiSearchList[index].imageUrl)),
+                                    child: CachedNetworkImage(
+                                      imageUrl: _wikiSearchList[index].imageUrl,
+                                      progressIndicatorBuilder: (context, url, downloadProgress) =>
+                                          CircularProgressIndicator(value: downloadProgress.progress),
+                                      errorWidget: (context, url, error) => Icon(Icons.error),
+                                    )),
                                 Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: Align(
@@ -109,7 +130,9 @@ class _WikiListPageState extends State<WikiListPage> implements WikiListView {
                                                   ScreenUtil.fontSizeSmall))),
                                 )
                               ]),
-                              onTap: () => {},
+                              onTap: () => {
+                                _presenter!.openLinkInBrowser(_wikiSearchList[index].pageId.toString())
+                              },
                             )),
                         staggeredTileBuilder: (int index) =>
                             new StaggeredTile.fit(1),
@@ -162,15 +185,6 @@ class _WikiListPageState extends State<WikiListPage> implements WikiListView {
     });
   }
 
-  _clearSearch() {
-    setState(() {
-      searchMessage = "Let's go!";
-      noData = false;
-      _wikiSearchKeyController.text = "";
-      _wikiSearchList = [];
-    });
-  }
-
   @override
   onFailLoadText(String msg) {
     setState(() {
@@ -200,6 +214,14 @@ class _WikiListPageState extends State<WikiListPage> implements WikiListView {
     setState(() {
       searchMessage = "Searching ....";
       noData = true;
+    });
+  }
+
+  @override
+  displaySearchHistory(List<String> list) {
+    setState(() {
+      _historyList=list;
+      hasLocalData=true;
     });
   }
 }

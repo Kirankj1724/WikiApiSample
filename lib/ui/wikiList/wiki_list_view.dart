@@ -9,4 +9,6 @@ abstract class WikiListView{
   showLoading();
 
   hideLoading();
+
+  displaySearchHistory(List<String> list);
 }

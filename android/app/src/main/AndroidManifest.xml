@@ -1,9 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.wiki_api_sample">
-    
-    <uses-permission android:name="Internet"/>
+
+    <uses-permission android:name="android.permission.INTERNET" />
     
    <application
+        android:usesCleartextTraffic="true"
         android:label="wiki_api_sample"
         android:icon="@mipmap/ic_launcher">
         <activity
