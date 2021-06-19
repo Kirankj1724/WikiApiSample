@@ -1,6 +1,12 @@
+
+
+https://user-images.githubusercontent.com/8352387/122632997-bd825e00-d0f3-11eb-9c43-884dc5929aa3.mp4
+
 # wiki_api_sample
 
-A Flutter android app to show search results via Wiki API.
+A Flutter android app to show search results from Wikipedia using Wiki API.
+
+The app also includes offline caching of images and response.
 
 ## Getting Started
 
